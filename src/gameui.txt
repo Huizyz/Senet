@@ -3,6 +3,8 @@ import components.*;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,10 +18,10 @@ public class GameUI extends JFrame {
     private JLabel[] diceLabels;
     private ImageIcon whiteStickIcon;
     private ImageIcon blackStickIcon;
-    private JButton rollDiceButton;
+    private JButton rollButton;
+    private String playerName;
     private Piece selectedPiece;
     private int selectedRow, selectedCol;
-    private String playerName;
 
     public GameUI(SenetGame game) {
         this.game = game;
@@ -28,20 +30,6 @@ public class GameUI extends JFrame {
         this.diceLabels = new JLabel[4];
         this.selectedPiece = null;
 
-        askPlayerName();
-        setupUI();
-        startNewGame();
-    }
-
-    private void askPlayerName() {
-        playerName = JOptionPane.showInputDialog(this, "Enter your name:", "Player Name", JOptionPane.PLAIN_MESSAGE);
-        if (playerName == null || playerName.trim().isEmpty()) {
-            playerName = "Player";
-        }
-        game.setPlayerName(playerName);
-    }
-
-    private void setupUI() {
         loadPieceImages(); // Load piece images into memory
         loadDiceImages(); // Load dice images into memory
 
@@ -73,9 +61,9 @@ public class GameUI extends JFrame {
         initializeDiceLabels(dicePanel);
 
         // Setup roll button
-        rollDiceButton = new JButton("Roll Dice");
-        rollDiceButton.addActionListener(e -> rollDiceAndDisplay());
-        dicePanel.add(rollDiceButton);
+        JButton rollButton = new JButton("Roll Dice");
+        rollButton.addActionListener(e -> rollDiceAndDisplay());
+        dicePanel.add(rollButton);
 
         // Add panels to the frame
         getContentPane().add(boardPanel, BorderLayout.CENTER);
@@ -83,6 +71,9 @@ public class GameUI extends JFrame {
 
         // Display the frame
         setVisible(true);
+
+        // Start a new game
+        startNewGame();
     }
 
     private void loadPieceImages() {
@@ -167,54 +158,6 @@ public class GameUI extends JFrame {
         game.startGame();
         updateBoardDisplay();
         System.out.println("New game started.");
-
-        askWhoStarts();
-    }
-
-    private void askWhoStarts() {
-        int option = JOptionPane.showOptionDialog(this,
-                "Who should start the game?",
-                "Start Game",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                new String[]{"Player", "Computer", "Random"},
-                "Player");
-
-        switch (option) {
-            case JOptionPane.YES_OPTION:
-                game.setPlayerStarts(true);
-                break;
-            case JOptionPane.NO_OPTION:
-                game.setPlayerStarts(false);
-                performComputerMove();
-                break;
-            case JOptionPane.CANCEL_OPTION:
-                boolean playerStarts = new Random().nextBoolean();
-                game.setPlayerStarts(playerStarts);
-                if (!playerStarts) {
-                    performComputerMove();
-                }
-                break;
-            default:
-                game.setPlayerStarts(true); // Default to player starts
-        }
-    }
-
-    private void performComputerMove() {
-        Timer timer = new Timer(1000, e -> {
-            game.performComputerMove();
-            updateBoardDisplay();
-            game.checkGameOver();
-            if (game.isPlayerTurn()) {
-                rollDiceButton.setEnabled(true);
-            } else {
-                performComputerMove();
-            }
-        });
-        rollDiceButton.setEnabled(false);
-        timer.setRepeats(false);
-        timer.start();
     }
 
     public void updateBoardDisplay() {
@@ -254,16 +197,5 @@ public class GameUI extends JFrame {
 
         // Debug statement
         System.out.println("Dice rolled: " + rollResult);
-
-        updateBoardDisplay();
-        game.checkGameOver();
-        if (!game.isPlayerTurn()) {
-            performComputerMove();
-        }
-    }
-
-    public static void main(String[] args) {
-        SenetGame game = new SenetGame();
-        new GameUI(game);
     }
 }

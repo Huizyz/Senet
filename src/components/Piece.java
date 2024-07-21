@@ -2,27 +2,35 @@ package components;
 
 public class Piece {
     private int position;
-    private Player owner;
-    private String color; // Add color attribute (e.g., "White" or "Black")
+    private String ownerColor;
 
-    public Piece(Player owner, String color) {
-        this.owner = owner;
-        this.color = color;
-        position = -1; // Off the board initially
+    public Piece(String ownerColor) {
+        this.ownerColor = ownerColor;
+        this.position = -1; // Off the board initially (may cause problems down the line)
     }
 
-    public String getColor() {
-        return color;
+    public String getOwnerColor() {
+        return ownerColor;
     }
 
     public String getImagePath() {
         // Assuming images are in a folder named "assets" in the project root
-        if (color.equalsIgnoreCase("White")) {
+        if (ownerColor.equalsIgnoreCase(Player.WHITE)) {
             return "Assets/images/white.png";
-        } else if (color.equalsIgnoreCase("Black")) {
+        } else if (ownerColor.equalsIgnoreCase(Player.BLACK)) {
             return "Assets/images/black.png";
         } else {
             return null; // Handle other cases or errors
+        }
+    }
+
+    public String getSymbol() {
+        if (ownerColor.equalsIgnoreCase(Player.WHITE)) {
+            return "W";
+        } else if (ownerColor.equalsIgnoreCase(Player.BLACK)) {
+            return "B";
+        } else {
+            return "-";
         }
     }
 }

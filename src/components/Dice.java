@@ -19,13 +19,14 @@ public class Dice {
             }
         }
 
-        // Calculate the result based on the number of white faces
+        // Determine the result based on the number of white faces
         return switch (whiteFaces) {
+            case 0 -> 5;
             case 1 -> 1;
             case 2 -> 2;
             case 3 -> 3;
             case 4 -> 4;
-            default -> 5;
+            default -> 0;
         };
     }
 }
