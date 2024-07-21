@@ -17,67 +17,15 @@ public class SenetGame extends Component {
     }
 
     public void startGame() {
-        String playerName = askPlayerName();
-        player = new Player(playerName);
-        computer = new Player(Player.BLACK);
-
-        String startingPlayer = askWhoStarts();
-        isPlayerTurn = determineStartingPlayer(startingPlayer);
 
         board.initializeBoard();
         board.initializePieces();
 
-        System.out.println("Game started. Player: " + playerName + ", Computer: Black");
+        System.out.println("Game started.");
     }
 
-    private String askPlayerName() {
-        return JOptionPane.showInputDialog("Enter your name:");
-    }
-
-    private String askWhoStarts() {
-        int option = JOptionPane.showOptionDialog(this,
-                "Who should start the game?",
-                "Start Game",
-                JOptionPane.YES_NO_CANCEL_OPTION,
-                JOptionPane.QUESTION_MESSAGE,
-                null,
-                new String[]{"Player", "Computer", "Random"},
-                "Player");
-
-        switch (option) {
-            case JOptionPane.YES_OPTION:
-                setPlayerStarts(true);
-                break;
-            case JOptionPane.NO_OPTION:
-                setPlayerStarts(false);
-                performComputerMove();
-                break;
-            case JOptionPane.CANCEL_OPTION:
-                boolean playerStarts = new Random().nextBoolean();
-                setPlayerStarts(playerStarts);
-                if (!playerStarts) {
-                    performComputerMove();
-                }
-                break;
-            default:
-                setPlayerStarts(true); // Default to player starts
-        }
-        return null;
-    }
-
-    void setPlayerStarts(boolean playerStarts) {
+    public void setPlayerStarts(boolean playerStarts) {
         isPlayerTurn = playerStarts;
-    }
-
-    private boolean determineStartingPlayer(String startingPlayer) {
-        if ("Player".equalsIgnoreCase(startingPlayer)) {
-            return true;
-        } else if ("Computer".equalsIgnoreCase(startingPlayer)) {
-            return false;
-        } else {
-            Random random = new Random();
-            return random.nextBoolean();
-        }
     }
 
     public SenetBoard getBoard() {
