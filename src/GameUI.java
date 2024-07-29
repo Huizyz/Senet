@@ -20,6 +20,8 @@ public class GameUI extends JFrame {
     private Piece selectedPiece;
     private int selectedRow, selectedCol;
     private String playerName;
+    private Color highlightColor = Color.RED; // Highlight color
+    private int currentRollResult = 0;
 
     public GameUI(SenetGame game) {
         this.game = game;
@@ -64,6 +66,7 @@ public class GameUI extends JFrame {
         // Setup board panel
         JPanel boardPanel = new JPanel(new GridLayout(3, 10));
         boardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        boardPanel.setBackground(Color.LIGHT_GRAY);
 
         // Initialize house labels
         initializeHouseLabels(boardPanel);
@@ -111,6 +114,7 @@ public class GameUI extends JFrame {
                 label.setHorizontalAlignment(SwingConstants.CENTER);
                 label.setOpaque(true);
                 label.setBorder(new LineBorder(Color.BLACK));
+                label.setBackground(Color.WHITE);
                 int finalRow = row;
                 int finalCol = col;
                 label.addMouseListener(new MouseAdapter() {
@@ -128,27 +132,47 @@ public class GameUI extends JFrame {
     }
 
     private void handleHouseClick(int row, int col, MouseEvent e) {
+        // Reset previously selected piece label color
+        if (selectedPiece != null) {
+            houseLabels[selectedRow][selectedCol].setBackground(Color.WHITE);
+        }
+
         if (SwingUtilities.isRightMouseButton(e)) {
-            // Right-click to deselect
             selectedPiece = null;
             System.out.println("Deselected piece.");
         } else if (selectedPiece == null) {
-            // Select piece
             selectedPiece = game.getBoard().getPieceAt(row, col);
             if (selectedPiece != null) {
-                selectedRow = row;
-                selectedCol = col;
-                System.out.println("Selected piece at (" + row + ", " + col + ").");
+                // Check if the piece belongs to the current player
+                String currentPlayerColor = game.isPlayerTurn() ? Player.WHITE : Player.BLACK;
+                if (selectedPiece.getOwnerColor().equals(currentPlayerColor)) {
+                    selectedRow = row;
+                    selectedCol = col;
+                    houseLabels[selectedRow][selectedCol].setBackground(highlightColor);
+                    System.out.println("Selected piece at (" + row + ", " + col + ").");
+                } else {
+                    selectedPiece = null;
+                    System.out.println("Cannot select opponent's piece.");
+                }
             }
         } else {
-            // Move selected piece
-            boolean success = game.movePiece(selectedRow, selectedCol, row, col);
+            // Move piece using the roll result
+            boolean success = game.movePiece(selectedRow, selectedCol, currentRollResult);
             if (success) {
-                System.out.println("Moved piece to (" + row + ", " + col + ").");
+                System.out.println("Moved piece from (" + selectedRow + ", " + selectedCol + ") with roll result " + currentRollResult);
+                // Check if the player gets another turn
+                if (currentRollResult == 1 || currentRollResult == 4 || currentRollResult == 5) {
+                    JOptionPane.showMessageDialog(this, "You get another turn!");
+                    rollDiceButton.setEnabled(true);
+                } else {
+                    game.setPlayerStarts(!game.isPlayerTurn()); // Switch turn to the computer
+                    performComputerMove();
+                }
             } else {
                 System.out.println("Invalid move.");
             }
-            selectedPiece = null; // Deselect after move
+            selectedPiece = null;
+            currentRollResult = 0; // Reset roll result after move
             updateBoardDisplay();
         }
     }
@@ -235,12 +259,11 @@ public class GameUI extends JFrame {
         }
     }
 
-
     public void rollDiceAndDisplay() {
-        int rollResult = game.rollDice();
+        currentRollResult = game.rollDice();
 
         // Display dice roll result using stick images
-        int whiteFaces = (rollResult == 5) ? 0 : rollResult;
+        int whiteFaces = (currentRollResult == 5) ? 0 : currentRollResult;
         for (int i = 0; i < 4; i++) {
             if (i < whiteFaces) {
                 diceLabels[i].setIcon(whiteStickIcon);
@@ -250,10 +273,13 @@ public class GameUI extends JFrame {
         }
 
         // Display the result of the roll
-        JOptionPane.showMessageDialog(this, "You rolled: " + rollResult);
+        JOptionPane.showMessageDialog(this, "You rolled: " + currentRollResult);
 
         // Debug statement
-        System.out.println("Dice rolled: " + rollResult);
+        System.out.println("Dice rolled: " + currentRollResult);
+
+        // Allow the player to select a piece to move based on the roll
+        rollDiceButton.setEnabled(false);
 
         updateBoardDisplay();
         game.checkGameOver();
