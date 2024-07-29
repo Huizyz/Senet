@@ -4,6 +4,8 @@ import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -30,8 +32,7 @@ public class GameUI extends JFrame {
         this.diceLabels = new JLabel[4];
         this.selectedPiece = null;
 
-        askPlayerName();
-        setupUI();
+
         startNewGame();
     }
 
@@ -54,13 +55,24 @@ public class GameUI extends JFrame {
         // Setup menu bar
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("File");
+        JMenu helpMenu = new JMenu("Help");
         JMenuItem newGameMenuItem = new JMenuItem("New Game");
         JMenuItem highScoresMenuItem = new JMenuItem("High Scores");
+        JMenuItem rulesMenuItem = new JMenuItem("Rules");
         newGameMenuItem.addActionListener(e -> startNewGame());
         highScoresMenuItem.addActionListener(e -> HighScoreUI.showHighScores());
+        rulesMenuItem.addActionListener(e -> {
+            try {
+                Desktop.getDesktop().open(new File("src/Assets/Rules.html"));
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         fileMenu.add(newGameMenuItem);
         fileMenu.add(highScoresMenuItem);
+        helpMenu.add(rulesMenuItem);
         menuBar.add(fileMenu);
+        menuBar.add(helpMenu);
         setJMenuBar(menuBar);
 
         // Setup board panel
@@ -132,6 +144,11 @@ public class GameUI extends JFrame {
     }
 
     private void handleHouseClick(int row, int col, MouseEvent e) {
+        if (!game.hasRolledDice) {
+            JOptionPane.showMessageDialog(this, "You must roll the dice before making a move.");
+            return;
+        }
+
         // Reset previously selected piece label color
         if (selectedPiece != null) {
             houseLabels[selectedRow][selectedCol].setBackground(Color.WHITE);
@@ -188,6 +205,9 @@ public class GameUI extends JFrame {
     }
 
     private void startNewGame() {
+        askPlayerName();
+        setupUI();
+        //game.hasRolledDice = false;
         game.startGame();
         updateBoardDisplay();
         System.out.println("New game started.");

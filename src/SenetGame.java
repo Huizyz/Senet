@@ -9,15 +9,18 @@ public class SenetGame extends Component {
     private Piece piece;
     private Dice dice;
     private boolean isPlayerTurn;
+    boolean hasRolledDice;
 
     public SenetGame() {
         board = new SenetBoard();
         dice = new Dice();
+        hasRolledDice = false; // Initialize the flag
     }
 
     public void startGame() {
         board.initializeBoard();
         board.initializePieces();
+        hasRolledDice = false; // Reset the flag
         System.out.println("Game started.");
     }
 
@@ -34,6 +37,7 @@ public class SenetGame extends Component {
     }
 
     public int rollDice() {
+        hasRolledDice = true; // Set the flag to true after rolling
         return dice.roll();
     }
 
@@ -65,37 +69,49 @@ public class SenetGame extends Component {
         }
 
         if (toRow < 0 || toRow >= SenetBoard.NUM_ROWS) {
+            System.out.println("Move out of bounds: (" + toRow + ", " + toCol + ")");
             return false;
         }
 
-        Piece targetPiece = board.getPieceAt(toRow, toCol);
         Piece movingPiece = board.getPieceAt(fromRow, fromCol);
+        Piece targetPiece = board.getPieceAt(toRow, toCol);
 
         if (targetPiece == null) {
             if (!canPassThreeConsecutiveEnemies(movingPiece, fromRow, fromCol, toRow, toCol)) {
+                System.out.println("Cannot pass three consecutive enemies.");
                 return false;
             }
-            // Move the piece on the board
             board.setPieceAt(toRow, toCol, movingPiece); // Place the piece at the new position
             board.setPieceAt(fromRow, fromCol, null); // Clear the old position
+            System.out.println("Moved piece from (" + fromRow + ", " + fromCol + ") to (" + toRow + ", " + toCol + ")");
             return true;
         } else if (!targetPiece.getOwnerColor().equals(movingPiece.getOwnerColor())) {
             if (!isProtectedPiece(targetPiece, toRow, toCol) && canSwapPiece(fromRow, fromCol, toRow, toCol)) {
-                // Move the piece on the board
-                board.setPieceAt(toRow, toCol, movingPiece); // Place the piece at the new position
-                board.setPieceAt(fromRow, fromCol, null); // Clear the old position
+                // Swap the pieces
+                board.setPieceAt(fromRow, fromCol, targetPiece); // Move the target piece to the original position
+                board.setPieceAt(toRow, toCol, movingPiece); // Place the moving piece at the target position
+                System.out.println("Swapped pieces between (" + fromRow + ", " + fromCol + ") and (" + toRow + ", " + toCol + ")");
                 return true;
             }
         }
 
+        System.out.println("Move failed from (" + fromRow + ", " + fromCol + ") to (" + toRow + ", " + toCol + ")");
         return false;
     }
 
 
+
     public boolean canSwapPiece(int fromRow, int fromCol, int toRow, int toCol) {
+        // Get the piece at the destination
         Piece targetPiece = board.getPieceAt(toRow, toCol);
-        return targetPiece != null && !targetPiece.getOwnerColor().equals(piece.getOwnerColor());
+
+        // Get the piece at the source location
+        Piece sourcePiece = board.getPieceAt(fromRow, fromCol);
+
+        // Check if the target piece is not null and belongs to the opponent
+        return targetPiece != null && !targetPiece.getOwnerColor().equals(sourcePiece.getOwnerColor());
     }
+
 
     private boolean isProtectedPiece(Piece piece, int row, int col) {
         // Handle special cases first
