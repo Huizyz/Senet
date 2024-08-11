@@ -22,15 +22,6 @@ public class Player {
         this.score = 0; // Initialize score
     }
 
-    // Getters and Setters
-    public List<Piece> getPieces() {
-        return pieces;
-    }
-
-    public void setPieces(List<Piece> pieces) {
-        this.pieces = pieces;
-    }
-
     public String getName() {
         return name;
     }
@@ -41,20 +32,6 @@ public class Player {
 
     public int getScore() {
         return score;
-    }
-
-    public void setScore(int score) {
-        this.score = score;
-    }
-
-    // Method to add a piece
-    public void addPiece(Piece piece) {
-        pieces.add(piece);
-    }
-
-    // Method to remove a piece
-    public void removePiece(Piece piece) {
-        pieces.remove(piece);
     }
 
     // Method to update the high scores list

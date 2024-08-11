@@ -13,17 +13,20 @@ import java.util.Random;
 
 public class GameUI extends JFrame {
     private SenetGame game;
+    private SenetBoard board;
     private JLabel[][] houseLabels;
     private Map<String, ImageIcon> pieceImages;
     private JLabel[] diceLabels;
     private ImageIcon whiteStickIcon;
     private ImageIcon blackStickIcon;
     private JButton rollDiceButton;
+    private JButton endTurnButton;
     private Piece selectedPiece;
     private int selectedRow, selectedCol;
     private String playerName;
     private Color highlightColor = Color.RED; // Highlight color
     private int currentRollResult = 0;
+    private int tempCurrentRollResult;
 
     public GameUI(SenetGame game) {
         this.game = game;
@@ -32,7 +35,8 @@ public class GameUI extends JFrame {
         this.diceLabels = new JLabel[4];
         this.selectedPiece = null;
 
-
+        askPlayerName();
+        setupUI();
         startNewGame();
     }
 
@@ -91,6 +95,11 @@ public class GameUI extends JFrame {
         rollDiceButton = new JButton("Roll Dice");
         rollDiceButton.addActionListener(e -> rollDiceAndDisplay());
         dicePanel.add(rollDiceButton);
+
+        // Setup end turn button
+        endTurnButton = new JButton("End Turn");
+        endTurnButton.addActionListener(e -> endPlayerTurn());
+        dicePanel.add(endTurnButton);
 
         // Add panels to the frame
         getContentPane().add(boardPanel, BorderLayout.CENTER);
@@ -155,9 +164,11 @@ public class GameUI extends JFrame {
         }
 
         if (SwingUtilities.isRightMouseButton(e)) {
+            // Deselect piece logic
             selectedPiece = null;
             System.out.println("Deselected piece.");
         } else if (selectedPiece == null) {
+            // Select piece logic
             selectedPiece = game.getBoard().getPieceAt(row, col);
             if (selectedPiece != null) {
                 // Check if the piece belongs to the current player
@@ -173,23 +184,32 @@ public class GameUI extends JFrame {
                 }
             }
         } else {
-            // Move piece using the roll result
+            // attempt to Move piece using the roll result
             boolean success = game.movePiece(selectedRow, selectedCol, currentRollResult);
             if (success) {
                 System.out.println("Moved piece from (" + selectedRow + ", " + selectedCol + ") with roll result " + currentRollResult);
+
+                tempCurrentRollResult = currentRollResult;
+
+                // Reset roll result after a successful move
+                currentRollResult = 0;
+
                 // Check if the player gets another turn
-                if (currentRollResult == 1 || currentRollResult == 4 || currentRollResult == 5) {
+                if (tempCurrentRollResult == 1 || tempCurrentRollResult == 4 || tempCurrentRollResult == 5) {
                     JOptionPane.showMessageDialog(this, "You get another turn!");
                     rollDiceButton.setEnabled(true);
                 } else {
-                    game.setPlayerStarts(!game.isPlayerTurn()); // Switch turn to the computer
-                    performComputerMove();
+                    // Switch turn to the computer if the player does not get another turn
+                    if (game.isPlayerTurn()) {
+                        game.setPlayerStarts(false); // Switch turn to the computer
+                        performComputerMoveGUI();
+                    }
                 }
             } else {
                 System.out.println("Invalid move.");
             }
             selectedPiece = null;
-            currentRollResult = 0; // Reset roll result after move
+            tempCurrentRollResult = 0;
             updateBoardDisplay();
         }
     }
@@ -205,11 +225,11 @@ public class GameUI extends JFrame {
     }
 
     private void startNewGame() {
-        askPlayerName();
-        setupUI();
-        //game.hasRolledDice = false;
+
         game.startGame();
         updateBoardDisplay();
+        rollDiceButton.setEnabled(true); // Enable the roll dice button for the first turn
+        currentRollResult = 0; // Ensure roll result is reset
         System.out.println("New game started.");
 
         askWhoStarts();
@@ -231,13 +251,13 @@ public class GameUI extends JFrame {
                 break;
             case JOptionPane.NO_OPTION:
                 game.setPlayerStarts(false);
-                performComputerMove();
+                performComputerMoveGUI();
                 break;
             case JOptionPane.CANCEL_OPTION:
                 boolean playerStarts = new Random().nextBoolean();
                 game.setPlayerStarts(playerStarts);
                 if (!playerStarts) {
-                    performComputerMove();
+                    performComputerMoveGUI();
                 }
                 break;
             default:
@@ -245,15 +265,15 @@ public class GameUI extends JFrame {
         }
     }
 
-    private void performComputerMove() {
-        Timer timer = new Timer(1000, e -> {
+    private void performComputerMoveGUI() {
+        Timer timer = new Timer(2000, e -> {
             game.performComputerMove();
             updateBoardDisplay();
             game.checkGameOver();
             if (game.isPlayerTurn()) {
                 rollDiceButton.setEnabled(true);
             } else {
-                performComputerMove();
+                performComputerMoveGUI();
             }
         });
         rollDiceButton.setEnabled(false);
@@ -303,8 +323,18 @@ public class GameUI extends JFrame {
 
         updateBoardDisplay();
         game.checkGameOver();
-        if (!game.isPlayerTurn()) {
-            performComputerMove();
+//        if (!game.isPlayerTurn()) {
+//            performComputerMoveGUI();
+//        }
+    }
+
+    private void endPlayerTurn() {
+        // Ensure that the player can only end their turn if it's actually their turn
+        if (game.isPlayerTurn()) {
+            game.setPlayerStarts(false); // Pass turn to the computer
+            performComputerMoveGUI(); // Trigger computer move
+        } else {
+            JOptionPane.showMessageDialog(this, "It's not your turn.");
         }
     }
 

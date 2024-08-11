@@ -1,0 +1,32 @@
+1. Senet Board Overview
+Board Structure:
+
+The board has 3 rows and 10 columns, giving 30 squares in total.
+The board is represented by a 2D array of Piece objects (pieces[row][col]).
+Special houses have predefined names like "The House of Second Life" (House 14) or "The House of Horus" (House 29).
+Zigzag Pattern:
+
+The movement on the board follows a zigzag pattern:
+Row 0 (top row): moves left to right.
+Row 1 (middle row): moves right to left.
+Row 2 (bottom row): moves left to right.
+This pattern is crucial for understanding how pieces move across rows.
+2. Game Components
+Piece:
+
+Each player has pieces identified by their color (Player.WHITE and Player.BLACK).
+These pieces are placed in specific initial positions on the board.
+Dice:
+
+The dice determine the number of squares a piece can move.
+Each roll allows a piece to move forward by a certain number of squares.
+3. Moving Pieces
+Basic Movement:
+
+A player selects a piece to move and rolls the dice to determine the number of squares (rollResult) the piece can move.
+The game first tries to move the piece forward by the rollResult.
+If a forward move is not possible, it may attempt a backward move by negating the rollResult.
+
+Row boundaries: This logic adjusts the row (toRow) and column (toCol) when the piece crosses from one row to another:
+If toCol < 0, the piece moves to the previous row (toRow--) and adjusts the column to stay within bounds.
+If toCol >= SenetBoard.HOUSES_PER_ROW, the piece moves to the next row (toRow++) and adjusts the column similarly.

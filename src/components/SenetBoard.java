@@ -16,6 +16,14 @@ public class SenetBoard {
         initializePieces();
     }
 
+    public void clearBoard() {
+        for (int row = 0; row < NUM_ROWS; row++) {
+            for (int col = 0; col < HOUSES_PER_ROW; col++) {
+                pieces[row][col] = null;  // Clear each house by setting it to null
+            }
+        }
+    }
+
     public void initializeBoard() {
         // Initialize all houses with default labels or special names
         for (int row = 0; row < NUM_ROWS; row++) {
@@ -25,8 +33,8 @@ public class SenetBoard {
         }
 
         // Assign specific names to special houses
-        houses[0][5] = "The House of Second Life";      // House 14
-        houses[1][5] = "The Good House";                // House 25
+        houses[1][5] = "The House of Second Life";      // House 14
+        houses[2][5] = "The Good House";                // House 25
         houses[2][6] = "The House of Water";            // House 26
         houses[2][7] = "The House of the Three Judges"; // House 27
         houses[2][8] = "The House of the Two Judges";   // House 28

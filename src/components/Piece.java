@@ -10,14 +10,4 @@ public class Piece {
     public String getOwnerColor() {
         return ownerColor;
     }
-
-    public String getSymbol() {
-        if (ownerColor.equalsIgnoreCase(Player.WHITE)) {
-            return "W";
-        } else if (ownerColor.equalsIgnoreCase(Player.BLACK)) {
-            return "B";
-        } else {
-            return "-";
-        }
-    }
 }

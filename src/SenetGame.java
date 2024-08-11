@@ -6,7 +6,6 @@ import java.awt.*;
 public class SenetGame extends Component {
     private SenetBoard board;
     private Player player;
-    private Piece piece;
     private Dice dice;
     private boolean isPlayerTurn;
     boolean hasRolledDice;
@@ -18,6 +17,7 @@ public class SenetGame extends Component {
     }
 
     public void startGame() {
+        board.clearBoard();
         board.initializeBoard();
         board.initializePieces();
         hasRolledDice = false; // Reset the flag
@@ -42,64 +42,90 @@ public class SenetGame extends Component {
     }
 
     public boolean movePiece(int fromRow, int fromCol, int rollResult) {
+        // Check if the player has rolled the dice before attempting to move
+        if (!hasRolledDice) {
+            System.out.println("You must roll the dice before making a move.");
+            return false; // Prevent the move
+        }
+
         Piece piece = board.getPieceAt(fromRow, fromCol);
         if (piece == null) {
+            hasRolledDice = false;
             return false;
         }
 
         // Attempt to move forward
         if (attemptMove(fromRow, fromCol, rollResult, true)) {
+            // Reset the dice roll after a successful move
+            hasRolledDice = false;
             return true;
         }
 
         // If forward move is not possible, attempt to move backward
-        return attemptMove(fromRow, fromCol, -rollResult, false);
+        if (attemptMove(fromRow, fromCol, -rollResult, false)) {
+            // Reset the dice roll after a successful move
+            hasRolledDice = false;
+            return true;
+        }
+
+
+        return false;
     }
 
     private boolean attemptMove(int fromRow, int fromCol, int moveAmount, boolean isForward) {
         int toRow = fromRow;
-        int toCol = fromCol + moveAmount;
+        // Determine the target column based on direction and movement
+        int toCol = fromCol + (isForward ? moveAmount : -moveAmount);
 
-        if (toCol < 0) {
-            toRow -= 1 + Math.abs(toCol) / SenetBoard.HOUSES_PER_ROW;
-            toCol = SenetBoard.HOUSES_PER_ROW - 1 - (Math.abs(toCol) % SenetBoard.HOUSES_PER_ROW);
-        } else if (toCol >= SenetBoard.HOUSES_PER_ROW) {
-            toRow += toCol / SenetBoard.HOUSES_PER_ROW;
-            toCol %= SenetBoard.HOUSES_PER_ROW;
+        // Adjust for crossing row boundaries
+        while (toCol < 0) {
+            toRow--;
+            toCol += SenetBoard.HOUSES_PER_ROW;
+        }
+        while (toCol >= SenetBoard.HOUSES_PER_ROW) {
+            toRow++;
+            toCol -= SenetBoard.HOUSES_PER_ROW;
         }
 
+        // Verify move is within board bounds
         if (toRow < 0 || toRow >= SenetBoard.NUM_ROWS) {
             System.out.println("Move out of bounds: (" + toRow + ", " + toCol + ")");
             return false;
         }
 
+        // Piece movement logic
         Piece movingPiece = board.getPieceAt(fromRow, fromCol);
         Piece targetPiece = board.getPieceAt(toRow, toCol);
 
+        if (movingPiece == null) {
+            System.out.println("No piece at the starting position.");
+            return false;
+        }
+
         if (targetPiece == null) {
+            // Check if the move is valid considering any special rules
             if (!canPassThreeConsecutiveEnemies(movingPiece, fromRow, fromCol, toRow, toCol)) {
                 System.out.println("Cannot pass three consecutive enemies.");
                 return false;
             }
-            board.setPieceAt(toRow, toCol, movingPiece); // Place the piece at the new position
-            board.setPieceAt(fromRow, fromCol, null); // Clear the old position
+            // Move piece to the new position
+            board.setPieceAt(toRow, toCol, movingPiece);
+            board.setPieceAt(fromRow, fromCol, null);
             System.out.println("Moved piece from (" + fromRow + ", " + fromCol + ") to (" + toRow + ", " + toCol + ")");
             return true;
         } else if (!targetPiece.getOwnerColor().equals(movingPiece.getOwnerColor())) {
+            // Handle opponent's piece
             if (!isProtectedPiece(targetPiece, toRow, toCol) && canSwapPiece(fromRow, fromCol, toRow, toCol)) {
-                // Swap the pieces
-                board.setPieceAt(fromRow, fromCol, targetPiece); // Move the target piece to the original position
-                board.setPieceAt(toRow, toCol, movingPiece); // Place the moving piece at the target position
+                board.setPieceAt(fromRow, fromCol, targetPiece);
+                board.setPieceAt(toRow, toCol, movingPiece);
                 System.out.println("Swapped pieces between (" + fromRow + ", " + fromCol + ") and (" + toRow + ", " + toCol + ")");
                 return true;
+            } else {
+                System.out.println("Swap failed between (" + fromRow + ", " + fromCol + ") and (" + toRow + ", " + toCol + ") due to protection.");
             }
         }
-
-        System.out.println("Move failed from (" + fromRow + ", " + fromCol + ") to (" + toRow + ", " + toCol + ")");
         return false;
     }
-
-
 
     public boolean canSwapPiece(int fromRow, int fromCol, int toRow, int toCol) {
         // Get the piece at the destination
@@ -111,7 +137,6 @@ public class SenetGame extends Component {
         // Check if the target piece is not null and belongs to the opponent
         return targetPiece != null && !targetPiece.getOwnerColor().equals(sourcePiece.getOwnerColor());
     }
-
 
     private boolean isProtectedPiece(Piece piece, int row, int col) {
         // Handle special cases first
@@ -141,6 +166,10 @@ public class SenetGame extends Component {
     }
 
     private boolean canPassThreeConsecutiveEnemies(Piece piece, int fromRow, int fromCol, int toRow, int toCol) {
+        if (piece == null) {
+            return true;
+        }
+
         int fromBox = fromRow * SenetBoard.HOUSES_PER_ROW + fromCol;
         int toBox = toRow * SenetBoard.HOUSES_PER_ROW + toCol;
         String opponentColor = piece.getOwnerColor().equals(Player.WHITE) ? Player.BLACK : Player.WHITE;
@@ -151,6 +180,7 @@ public class SenetGame extends Component {
             return !weCannotPassThreeOpponentsBackward(fromBox, toBox, opponentColor);
         }
     }
+
 
     private boolean weCannotPassThreeOpponentsForward(int startBox, int endBox, String opponentColor) {
         if (endBox - startBox <= 3) return false; // Not enough space to be blocked by three
@@ -199,19 +229,38 @@ public class SenetGame extends Component {
     }
 
     public void performComputerMove() {
-        // Implement the logic for the computer to perform its move
+        // Roll the dice for the computer
         int rollResult = rollDice();
         System.out.println("Computer rolled: " + rollResult);
 
-        // Add logic to select and move a piece for the computer based on the roll result
+        // Initialize a flag to check if a move was made
         boolean moveMade = false;
 
+            // Try to find and perform a valid move for the computer
+            for (int row = 0; row < SenetBoard.NUM_ROWS; row++) {
+                for (int col = 0; col < SenetBoard.HOUSES_PER_ROW; col++) {
+                    Piece piece = board.getPieceAt(row, col);
+                    if (piece != null && piece.getOwnerColor().equals("Black")) {
+                        // Attempt to make a move with this piece
+                        if (movePiece(row, col, rollResult)) {
+                            moveMade = true;
+                            break; // exit the column loop if a move was made
+                        }
+                    }
+                }
+                if (moveMade){
+                    break; // exit the row loop if a move was made
+                }
+            }
+
+        // If no move was made, print a message
         if (!moveMade) {
-            System.out.println("Computer could not make a move.");
+            System.out.println("Computer could not make a move, passing turn to player.");
         }
 
         // Switch turn back to the player
         isPlayerTurn = true;
+        hasRolledDice = false;
     }
 
     public void checkGameOver() {
