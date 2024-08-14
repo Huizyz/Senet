@@ -67,7 +67,7 @@ public class Player {
     }
 
     // Inner class to represent a player's score
-    static class PlayerScore {
+    public static class PlayerScore {
         private final String playerName;
         private final int score;
 

@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
-public class GameUI extends JFrame {
+public class GameUI extends JPanel {
     private SenetGame game;
     private SenetBoard board;
     private JLabel[][] houseLabels;
@@ -37,6 +37,7 @@ public class GameUI extends JFrame {
         this.diceLabels = new JLabel[4];
         this.selectedPiece = null;
 
+        setLayout(new BorderLayout());
         askPlayerName();
         setupUI();
         startNewGame();
@@ -54,52 +55,37 @@ public class GameUI extends JFrame {
         loadPieceImages();
         loadDiceImages();
 
-        setTitle("Senet Game");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(600, 400);
-
-        // Setup menu bar
-        JMenuBar menuBar = new JMenuBar();
-        setupMenu(menuBar);
-        setJMenuBar(menuBar);
-
         // Setup board panel
         JPanel boardPanel = createBoardPanel();
         JPanel dicePanel = createDicePanel();
 
-        // Add panels to the frame
-        getContentPane().add(boardPanel, BorderLayout.CENTER);
-        getContentPane().add(dicePanel, BorderLayout.SOUTH);
-
-        // Display the frame
-        setVisible(true);
+        // Add panels to the GameUI panel
+        add(boardPanel, BorderLayout.CENTER);
+        add(dicePanel, BorderLayout.SOUTH);
     }
 
-    private void setupMenu(JMenuBar menuBar) {
-        JMenu fileMenu = new JMenu("File");
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem newGameMenuItem = new JMenuItem("New Game");
-        JMenuItem highScoresMenuItem = new JMenuItem("High Scores");
-        JMenuItem rulesMenuItem = new JMenuItem("Rules");
+//    private void setupMenu(JMenuBar menuBar) {
+//        JMenu fileMenu = new JMenu("File");
+//        JMenu helpMenu = new JMenu("Help");
+//        JMenuItem newGameMenuItem = new JMenuItem("New Game");
+//        JMenuItem rulesMenuItem = new JMenuItem("Rules");
+//
+//        newGameMenuItem.addActionListener(e -> startNewGame());
+//        rulesMenuItem.addActionListener(e -> openRulesFile());
+//
+//        fileMenu.add(newGameMenuItem);
+//        helpMenu.add(rulesMenuItem);
+//        menuBar.add(fileMenu);
+//        menuBar.add(helpMenu);
+//    }
 
-        newGameMenuItem.addActionListener(e -> startNewGame());
-        highScoresMenuItem.addActionListener(e -> HighScoreUI.showHighScores());
-        rulesMenuItem.addActionListener(e -> openRulesFile());
-
-        fileMenu.add(newGameMenuItem);
-        fileMenu.add(highScoresMenuItem);
-        helpMenu.add(rulesMenuItem);
-        menuBar.add(fileMenu);
-        menuBar.add(helpMenu);
-    }
-
-    private void openRulesFile() {
-        try {
-            Desktop.getDesktop().open(new File("src/Assets/Rules.html"));
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, "Unable to open rules file.");
-        }
-    }
+//    private void openRulesFile() {
+//        try {
+//            Desktop.getDesktop().open(new File("src/Assets/Rules.html"));
+//        } catch (IOException ex) {
+//            JOptionPane.showMessageDialog(this, "Unable to open rules file.");
+//        }
+//    }
 
     private JPanel createBoardPanel() {
         JPanel boardPanel = new JPanel(new GridLayout(3, 10));
@@ -266,7 +252,7 @@ public class GameUI extends JFrame {
         askWhoStarts();
     }
 
-    private void askWhoStarts() {
+    void askWhoStarts() {
         int option = JOptionPane.showOptionDialog(this,
                 "Who should start the game?",
                 "Start Game",

@@ -1,0 +1,92 @@
+import javax.swing.*;
+import java.awt.*;
+
+public class HelpScreen extends JPanel {
+
+    public HelpScreen() {
+        setLayout(new BorderLayout());
+
+        // Title label
+        JLabel helpLabel = new JLabel("Help & Instructions", SwingConstants.CENTER);
+        helpLabel.setFont(new Font("Serif", Font.BOLD, 24));
+        add(helpLabel, BorderLayout.NORTH);
+
+        // JEditorPane to display the HTML content
+        JEditorPane helpPane = new JEditorPane();
+        helpPane.setContentType("text/html");
+        helpPane.setText(getHelpHTML()); // Set the HTML content
+        helpPane.setEditable(false);
+
+        // Add the helpPane to the center with a scroll bar
+        add(new JScrollPane(helpPane), BorderLayout.CENTER);
+    }
+
+    // Method to return the HTML content as a string
+    private String getHelpHTML() {
+        return """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>Rules</title>
+            </head>
+            <body>
+
+            <h1>How to play Senet</h1>
+
+            <p>
+                <b>Goal:</b><br>
+                Be the first player to move all 5 of the tokens in your player color (white) off of the
+                end of the game board. The game ends when one player has successfully passed square
+                30, the “House of Horus,” with each of their five tokens, removing them from the game
+                board.
+            </p>
+            <p>
+                <b>Setup:</b><br>
+                All the colored tokens get placed on squares 1–10, with the white tokens on the odd-numbered
+                squares and the dark tokens on the even-numbered squares.
+            </p>
+            <p>
+                <b>How the player moves:</b><br
+                Toss the throwing sticks. The number of light sides that land facing up is the
+                number of spaces a player moves one of their tokens. Only one token may be moved per
+                turn.
+            </p>
+                <ul>
+                <li>Toss 1 light stick, you move one token one space and get to toss again.</li>
+                <li>Toss 2 light sticks, you move one token two spaces.</li>
+                <li>Toss 3 light sticks, you move one token three spaces.</li>
+                <li>Toss 4 light sticks, you move one token four spaces and get to toss again.</li>
+                <li>Toss 0 light sticks, you move one token five spaces and get to toss again.</li>
+                </ul>
+            <p>Tokens move along the board from left to right, following the order of the numbers.</p>
+            <p><b>Who Plays First:</b><br>
+                The player decides to start first, let the Computer go first or have it select for them.</p>
+            <p><b>Gameplay:</b><br></p>
+            <ol>
+                <li>Only a single token can occupy a space on the board. If your token moves onto
+                    the same space as one of your opponent’s tokens, send your opponent’s token back
+                    to the space your token occupied at the start of its movement. You cannot land on a
+                    space occupied by one of your own tokens.</li>
+                <li>If two tokens of the same color are on consecutive squares, neither token can be displaced by an opponent landing on the same space.</li>
+                <li>On your turn, you must try to move forward. If you cannot, you must move a token
+                    backwards instead, and you lose any extra turns you may have thrown.</li>
+                <li>Three enemy pieces on consecutive squares may not be passed by the opponent.</li>
+                <li>On square 25 a piece is protected, even if it is alone.</li>
+                <li>On squares 27, 28 and 29 your pieces are never protected. If you move backward from one of those squares you will return to the 15th square.</li>
+            </ol>
+            <ul>
+                <li>Square 26: The House of Waters. If a token lands here, you have to go back to House 15. </li>
+                <li>Square 27: Must throw a 3 to exit.</li>
+                <li>Square 28: Must throw a 2 to exit.</li>
+                <li>Square 29. Must throw a 1 to exit.</li>
+            </ul>
+            <cite>Ruleset from:</cite>
+            <cite><a href="https://isac.uchicago.edu/sites/default/files/uploads/shared/docs/Education/Make%20Your%20Own%20Senet%20Game_0.pdf">https://isac.uchicago.edu/sites/default/files/uploads/shared/docs/Education/Make%20Your%20Own%20Senet%20Game_0.pdf</a></cite>
+            <cite>and other</cite>
+
+            </body>
+            </html>
+            """;
+    }
+}

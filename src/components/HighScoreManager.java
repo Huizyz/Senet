@@ -6,7 +6,7 @@ import java.util.List;
 
 public class HighScoreManager {
 
-    private static final String FILE_PATH = "highscores.txt";
+    private static final String FILE_PATH = "src/highscores.txt";
 
     public static void saveHighScores(List<Player.PlayerScore> highScores) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH))) {
