@@ -1,5 +1,0 @@
-We need to make it so that once you get on House 25 or above you cannot move forwards anymore unless its the exact throw needed to exit.
-
-On Houses 27, 28 and 29 your pieces are never protected. If you move backward from one of those square (if it is your only legal move or your opponent swaps with you) you return to House 15.
-
-So if landed initially on House 29 player will need to roll a 1 to exit, on house 28 a 2, on House 27 a 3, if the player lands on house 26 they will have to go to House 15, House 25 the piece is protected even if its alone and may not move beyond this point unless they roll a 5 to exit.

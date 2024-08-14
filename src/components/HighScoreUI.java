@@ -20,9 +20,9 @@ public class HighScoreUI extends JFrame {
         panel.add(title);
 
         // Get high scores
-        List<Player.PlayerScore> scores = Player.getHighScores();
+        List<Player.PlayerScore> scores = HighScoreManager.loadHighScores();
         for (Player.PlayerScore score : scores) {
-            JLabel scoreLabel = new JLabel(score.getPlayerName() + ": " + score.getScore(), SwingConstants.CENTER);
+            JLabel scoreLabel = new JLabel(score.getPlayerName() + ": " + score.getScore() + " wins", SwingConstants.CENTER);
             panel.add(scoreLabel);
         }
 

@@ -10,16 +10,15 @@ public class Player {
     public static final String BLACK = "Black";
     private List<Piece> pieces;
     private String name;
-    private int score;
-    // New field to track the score or relevant metric for high scores
+    private int wins;
 
-    // Static list to keep track of all players' high scores
+    // Static list to keep track of all players' wins
     private static final List<PlayerScore> highScores = new ArrayList<>();
 
     public Player(String name) {
         this.name = name;
         this.pieces = new ArrayList<>();
-        this.score = 0; // Initialize score
+        this.wins = 0; // Initialize score
     }
 
     public String getName() {
@@ -30,22 +29,36 @@ public class Player {
         this.name = name;
     }
 
-    public int getScore() {
-        return score;
+    public int getWins() {
+        return wins;
     }
 
-    // Method to update the high scores list
+    // Method to update the number of wins for a player
+    public void incrementWins() {
+        this.wins++;
+        updateHighScores(this);
+    }
+
     public static void updateHighScores(Player player) {
-        // Add new score
-        highScores.add(new PlayerScore(player.getName(), player.getScore()));
+        // Load existing high scores
+        List<PlayerScore> existingHighScores = HighScoreManager.loadHighScores();
+
+        // Remove the player if they already exist in the list
+        existingHighScores.removeIf(ps -> ps.getPlayerName().equals(player.getName()));
+
+        // Add new win count
+        existingHighScores.add(new PlayerScore(player.getName(), player.getWins()));
 
         // Sort high scores in descending order
-        Collections.sort(highScores, Comparator.comparingInt(PlayerScore::getScore).reversed());
+        Collections.sort(existingHighScores, Comparator.comparingInt(PlayerScore::getScore).reversed());
 
         // Keep only the top 5 scores
-        if (highScores.size() > 5) {
-            highScores.subList(5, highScores.size()).clear();
+        if (existingHighScores.size() > 5) {
+            existingHighScores.subList(5, existingHighScores.size()).clear();
         }
+
+        // Save updated high scores
+        HighScoreManager.saveHighScores(existingHighScores);
     }
 
     // Method to get high scores
