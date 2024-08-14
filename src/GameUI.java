@@ -21,6 +21,7 @@ public class GameUI extends JFrame {
     private ImageIcon blackStickIcon;
     private JButton rollDiceButton;
     private JButton endTurnButton;
+    private JButton finishButton;
     private Piece selectedPiece;
     private int selectedRow, selectedCol;
     private String playerName;
@@ -30,6 +31,7 @@ public class GameUI extends JFrame {
 
     public GameUI(SenetGame game) {
         this.game = game;
+        this.board = game.getBoard();
         this.houseLabels = new JLabel[3][10];
         this.pieceImages = new HashMap<>();
         this.diceLabels = new JLabel[4];
@@ -49,8 +51,8 @@ public class GameUI extends JFrame {
     }
 
     private void setupUI() {
-        loadPieceImages(); // Load piece images into memory
-        loadDiceImages(); // Load dice images into memory
+        loadPieceImages();
+        loadDiceImages();
 
         setTitle("Senet Game");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -58,48 +60,12 @@ public class GameUI extends JFrame {
 
         // Setup menu bar
         JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu = new JMenu("File");
-        JMenu helpMenu = new JMenu("Help");
-        JMenuItem newGameMenuItem = new JMenuItem("New Game");
-        JMenuItem highScoresMenuItem = new JMenuItem("High Scores");
-        JMenuItem rulesMenuItem = new JMenuItem("Rules");
-        newGameMenuItem.addActionListener(e -> startNewGame());
-        highScoresMenuItem.addActionListener(e -> HighScoreUI.showHighScores());
-        rulesMenuItem.addActionListener(e -> {
-            try {
-                Desktop.getDesktop().open(new File("src/Assets/Rules.html"));
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
-            }
-        });
-        fileMenu.add(newGameMenuItem);
-        fileMenu.add(highScoresMenuItem);
-        helpMenu.add(rulesMenuItem);
-        menuBar.add(fileMenu);
-        menuBar.add(helpMenu);
+        setupMenu(menuBar);
         setJMenuBar(menuBar);
 
         // Setup board panel
-        JPanel boardPanel = new JPanel(new GridLayout(3, 10));
-        boardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        boardPanel.setBackground(Color.LIGHT_GRAY);
-
-        // Initialize house labels
-        initializeHouseLabels(boardPanel);
-
-        // Setup dice panel
-        JPanel dicePanel = new JPanel(new FlowLayout());
-        initializeDiceLabels(dicePanel);
-
-        // Setup roll button
-        rollDiceButton = new JButton("Roll Dice");
-        rollDiceButton.addActionListener(e -> rollDiceAndDisplay());
-        dicePanel.add(rollDiceButton);
-
-        // Setup end turn button
-        endTurnButton = new JButton("End Turn");
-        endTurnButton.addActionListener(e -> endPlayerTurn());
-        dicePanel.add(endTurnButton);
+        JPanel boardPanel = createBoardPanel();
+        JPanel dicePanel = createDicePanel();
 
         // Add panels to the frame
         getContentPane().add(boardPanel, BorderLayout.CENTER);
@@ -109,13 +75,69 @@ public class GameUI extends JFrame {
         setVisible(true);
     }
 
+    private void setupMenu(JMenuBar menuBar) {
+        JMenu fileMenu = new JMenu("File");
+        JMenu helpMenu = new JMenu("Help");
+        JMenuItem newGameMenuItem = new JMenuItem("New Game");
+        JMenuItem highScoresMenuItem = new JMenuItem("High Scores");
+        JMenuItem rulesMenuItem = new JMenuItem("Rules");
+
+        newGameMenuItem.addActionListener(e -> startNewGame());
+        highScoresMenuItem.addActionListener(e -> HighScoreUI.showHighScores());
+        rulesMenuItem.addActionListener(e -> openRulesFile());
+
+        fileMenu.add(newGameMenuItem);
+        fileMenu.add(highScoresMenuItem);
+        helpMenu.add(rulesMenuItem);
+        menuBar.add(fileMenu);
+        menuBar.add(helpMenu);
+    }
+
+    private void openRulesFile() {
+        try {
+            Desktop.getDesktop().open(new File("src/Assets/Rules.html"));
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Unable to open rules file.");
+        }
+    }
+
+    private JPanel createBoardPanel() {
+        JPanel boardPanel = new JPanel(new GridLayout(3, 10));
+        boardPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        boardPanel.setBackground(Color.LIGHT_GRAY);
+        initializeHouseLabels(boardPanel); // Initialize house labels
+        return boardPanel;
+    }
+
+    private JPanel createDicePanel() {
+        JPanel dicePanel = new JPanel(new FlowLayout());
+        initializeDiceLabels(dicePanel);
+
+        // Setup roll button
+        rollDiceButton = new JButton("Throw Sticks");
+        rollDiceButton.addActionListener(e -> rollDiceAndDisplay());
+        dicePanel.add(rollDiceButton);
+
+        // Setup end turn button
+        endTurnButton = new JButton("End Turn");
+        endTurnButton.addActionListener(e -> endPlayerTurn());
+        dicePanel.add(endTurnButton);
+
+        // Setup exit token button
+        finishButton = new JButton("Finish");
+        finishButton.setEnabled(false);
+        finishButton.addActionListener(e -> handleFinishPiece());
+        dicePanel.add(finishButton);
+
+        return dicePanel;
+    }
+
     private void loadPieceImages() {
         // Load images for white and black pieces
         String[] colors = {Player.WHITE, Player.BLACK};
         for (String color : colors) {
             String imagePath = "Assets/images/" + color.toLowerCase() + ".png";
-            ImageIcon imageIcon = new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource(imagePath)));
-            pieceImages.put(color, imageIcon);
+            pieceImages.put(color, new ImageIcon(Objects.requireNonNull(getClass().getClassLoader().getResource(imagePath))));
         }
     }
 
@@ -166,6 +188,7 @@ public class GameUI extends JFrame {
         if (SwingUtilities.isRightMouseButton(e)) {
             // Deselect piece logic
             selectedPiece = null;
+            finishButton.setEnabled(false); // Disable finish button on deselect
             System.out.println("Deselected piece.");
         } else if (selectedPiece == null) {
             // Select piece logic
@@ -177,9 +200,18 @@ public class GameUI extends JFrame {
                     selectedRow = row;
                     selectedCol = col;
                     houseLabels[selectedRow][selectedCol].setBackground(highlightColor);
+
+                    // Check if the piece can finish and enable the button
+                    if (game.canPieceFinish(selectedPiece, row, col, currentRollResult)) {
+                        finishButton.setEnabled(true);
+                    } else {
+                        finishButton.setEnabled(false);
+                    }
+
                     System.out.println("Selected piece at (" + row + ", " + col + ").");
                 } else {
                     selectedPiece = null;
+                    finishButton.setEnabled(false); // Disable finish button on invalid selection
                     System.out.println("Cannot select opponent's piece.");
                 }
             }
@@ -187,8 +219,6 @@ public class GameUI extends JFrame {
             // attempt to Move piece using the roll result
             boolean success = game.movePiece(selectedRow, selectedCol, currentRollResult);
             if (success) {
-                System.out.println("Moved piece from (" + selectedRow + ", " + selectedCol + ") with roll result " + currentRollResult);
-
                 tempCurrentRollResult = currentRollResult;
 
                 // Reset roll result after a successful move
@@ -196,7 +226,8 @@ public class GameUI extends JFrame {
 
                 // Check if the player gets another turn
                 if (tempCurrentRollResult == 1 || tempCurrentRollResult == 4 || tempCurrentRollResult == 5) {
-                    JOptionPane.showMessageDialog(this, "You get another turn!");
+                    game.notifyExtraRoll();
+//                    JOptionPane.showMessageDialog(this, "You get another turn!");
                     rollDiceButton.setEnabled(true);
                 } else {
                     // Switch turn to the computer if the player does not get another turn
@@ -210,6 +241,7 @@ public class GameUI extends JFrame {
             }
             selectedPiece = null;
             tempCurrentRollResult = 0;
+            finishButton.setEnabled(false); // Disable finish button after move
             updateBoardDisplay();
         }
     }
@@ -220,12 +252,11 @@ public class GameUI extends JFrame {
             JLabel label = new JLabel();
             label.setHorizontalAlignment(SwingConstants.CENTER);
             diceLabels[i] = label;
-            dicePanel.add(label);
+            dicePanel.add(diceLabels[i]);
         }
     }
 
-    private void startNewGame() {
-
+    void startNewGame() {
         game.startGame();
         updateBoardDisplay();
         rollDiceButton.setEnabled(true); // Enable the roll dice button for the first turn
@@ -265,8 +296,8 @@ public class GameUI extends JFrame {
         }
     }
 
-    private void performComputerMoveGUI() {
-        Timer timer = new Timer(2000, e -> {
+    void performComputerMoveGUI() {
+        Timer timer = new Timer(1000, e -> {
             game.performComputerMove();
             updateBoardDisplay();
             game.checkGameOver();
@@ -313,9 +344,10 @@ public class GameUI extends JFrame {
         }
 
         // Display the result of the roll
-        JOptionPane.showMessageDialog(this, "You rolled: " + currentRollResult);
+        JOptionPane.showMessageDialog(this, "You threw: " + currentRollResult);
 
         // Debug statement
+        System.out.println();
         System.out.println("Dice rolled: " + currentRollResult);
 
         // Allow the player to select a piece to move based on the roll
@@ -323,9 +355,46 @@ public class GameUI extends JFrame {
 
         updateBoardDisplay();
         game.checkGameOver();
-//        if (!game.isPlayerTurn()) {
-//            performComputerMoveGUI();
-//        }
+    }
+
+    private void handleFinishPiece() {
+        if (selectedPiece == null) {
+            JOptionPane.showMessageDialog(this, "No piece selected.");
+            return;
+        }
+
+        int row = selectedRow;
+        int col = selectedCol;
+
+        // Check if the piece can finish
+        if (game.canPieceFinish(selectedPiece, row, col, currentRollResult)) {
+            // Move the piece out of the board
+            board.setPieceAt(row, col, null);
+            System.out.println("Piece at (" + row + ", " + col + ") has finished and moved out.");
+
+            // Update game state
+            if (selectedPiece.getOwnerColor().equals(Player.WHITE)) {
+                game.incrementWhiteFinishedPieces();
+                System.out.println("White pieces finished:" + game.getWhitePlayerFinishedPieces());
+            } else {
+                game.incrementBlackFinishedPieces();
+                System.out.println("Black pieces finished:" + game.getBlackPlayerFinishedPieces());
+            }
+            game.checkGameOver(); // Check if the game has ended
+
+            // Reset selected piece and roll result
+            houseLabels[selectedRow][selectedCol].setBackground(Color.WHITE);
+            selectedPiece = null;
+            currentRollResult = 0;
+            updateBoardDisplay();
+            game.endPlayerTurn();
+            System.out.println("End turn to continue");
+
+            // Disable the finish button as the piece has been moved
+            finishButton.setEnabled(false);
+        } else {
+            JOptionPane.showMessageDialog(this, "The piece cannot finish with the current roll.");
+        }
     }
 
     private void endPlayerTurn() {
@@ -336,10 +405,5 @@ public class GameUI extends JFrame {
         } else {
             JOptionPane.showMessageDialog(this, "It's not your turn.");
         }
-    }
-
-    public static void main(String[] args) {
-        SenetGame game = new SenetGame();
-        new GameUI(game);
     }
 }

@@ -1,32 +1,5 @@
-1. Senet Board Overview
-Board Structure:
+We need to make it so that once you get on House 25 or above you cannot move forwards anymore unless its the exact throw needed to exit.
 
-The board has 3 rows and 10 columns, giving 30 squares in total.
-The board is represented by a 2D array of Piece objects (pieces[row][col]).
-Special houses have predefined names like "The House of Second Life" (House 14) or "The House of Horus" (House 29).
-Zigzag Pattern:
+On Houses 27, 28 and 29 your pieces are never protected. If you move backward from one of those square (if it is your only legal move or your opponent swaps with you) you return to House 15.
 
-The movement on the board follows a zigzag pattern:
-Row 0 (top row): moves left to right.
-Row 1 (middle row): moves right to left.
-Row 2 (bottom row): moves left to right.
-This pattern is crucial for understanding how pieces move across rows.
-2. Game Components
-Piece:
-
-Each player has pieces identified by their color (Player.WHITE and Player.BLACK).
-These pieces are placed in specific initial positions on the board.
-Dice:
-
-The dice determine the number of squares a piece can move.
-Each roll allows a piece to move forward by a certain number of squares.
-3. Moving Pieces
-Basic Movement:
-
-A player selects a piece to move and rolls the dice to determine the number of squares (rollResult) the piece can move.
-The game first tries to move the piece forward by the rollResult.
-If a forward move is not possible, it may attempt a backward move by negating the rollResult.
-
-Row boundaries: This logic adjusts the row (toRow) and column (toCol) when the piece crosses from one row to another:
-If toCol < 0, the piece moves to the previous row (toRow--) and adjusts the column to stay within bounds.
-If toCol >= SenetBoard.HOUSES_PER_ROW, the piece moves to the next row (toRow++) and adjusts the column similarly.
+So if landed initially on House 29 player will need to roll a 1 to exit, on house 28 a 2, on House 27 a 3, if the player lands on house 26 they will have to go to House 15, House 25 the piece is protected even if its alone and may not move beyond this point unless they roll a 5 to exit.

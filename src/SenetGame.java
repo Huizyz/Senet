@@ -5,15 +5,24 @@ import java.awt.*;
 
 public class SenetGame extends Component {
     private SenetBoard board;
+    private GameUI gameUI;
     private Player player;
     private Dice dice;
     private boolean isPlayerTurn;
     boolean hasRolledDice;
+    private int whitePlayerFinishedPieces;
+    private int blackPlayerFinishedPieces;
+    private final int totalWhitePieces = 5; // Total number of pieces for each player
+    private final int totalBlackPieces = 5;
+    private boolean canNotifyExtraRoll = true;
+    private String playerName;
 
     public SenetGame() {
         board = new SenetBoard();
         dice = new Dice();
         hasRolledDice = false; // Initialize the flag
+        whitePlayerFinishedPieces = 0; // Initialize counters
+        blackPlayerFinishedPieces = 0;
     }
 
     public void startGame() {
@@ -21,6 +30,9 @@ public class SenetGame extends Component {
         board.initializeBoard();
         board.initializePieces();
         hasRolledDice = false; // Reset the flag
+        whitePlayerFinishedPieces = 0; // Reset counters
+        blackPlayerFinishedPieces = 0;
+        canNotifyExtraRoll = true; // Enable notifications for the new game
         System.out.println("Game started.");
     }
 
@@ -38,6 +50,7 @@ public class SenetGame extends Component {
 
     public int rollDice() {
         hasRolledDice = true; // Set the flag to true after rolling
+        canNotifyExtraRoll = true;
         return dice.roll();
     }
 
@@ -62,19 +75,37 @@ public class SenetGame extends Component {
         }
 
         // If forward move is not possible, attempt to move backward
-        if (attemptMove(fromRow, fromCol, -rollResult, false)) {
+        if (attemptMove(fromRow, fromCol, rollResult, false)) {
             // Reset the dice roll after a successful move
             hasRolledDice = false;
+            // End the player's turn immediately after a backward move
+            endPlayerTurn();
             return true;
         }
-
 
         return false;
     }
 
+    void endPlayerTurn() {
+
+        System.out.println("Turn ended. Switching to the opponent.");
+
+        // Disable notifications for extra rolls
+        canNotifyExtraRoll = false;
+        // Reset dice roll status
+        hasRolledDice = false;
+    }
+
+    void notifyExtraRoll() {
+        if (canNotifyExtraRoll) {
+            // Display notification for extra roll
+            JOptionPane.showMessageDialog(null, "You get another turn!");
+        }
+    }
+
     private boolean attemptMove(int fromRow, int fromCol, int moveAmount, boolean isForward) {
         int toRow = fromRow;
-        // Determine the target column based on direction and movement
+        // Adjust direction based on isForward flag
         int toCol = fromCol + (isForward ? moveAmount : -moveAmount);
 
         // Adjust for crossing row boundaries
@@ -95,13 +126,18 @@ public class SenetGame extends Component {
 
         // Piece movement logic
         Piece movingPiece = board.getPieceAt(fromRow, fromCol);
-        Piece targetPiece = board.getPieceAt(toRow, toCol);
-
         if (movingPiece == null) {
             System.out.println("No piece at the starting position.");
             return false;
         }
 
+        // Waterfall check: if moving backward from houses 27, 28, or 29
+        if (!isForward) {
+            waterFall(movingPiece, fromRow, fromCol, toRow, toCol);
+        }
+
+        // Continue with the rest of the movement logic...
+        Piece targetPiece = board.getPieceAt(toRow, toCol);
         if (targetPiece == null) {
             // Check if the move is valid considering any special rules
             if (!canPassThreeConsecutiveEnemies(movingPiece, fromRow, fromCol, toRow, toCol)) {
@@ -146,6 +182,8 @@ public class SenetGame extends Component {
         if (row * SenetBoard.HOUSES_PER_ROW + col >= 27) {
             return false; // Houses 27, 28, and 29 are never protected
         }
+        // Protected Piece: A piece is protected if it is located in a special house (House 25) or if there is at least one other friendly piece in the adjacent houses to the left or right.
+        // Not Protected: If the piece is in Houses 27, 28, or 29, or if there are no adjacent friendly pieces, it is not protected.
 
         String color = piece.getOwnerColor();
         int currentBox = row * SenetBoard.HOUSES_PER_ROW + col;
@@ -180,7 +218,6 @@ public class SenetGame extends Component {
             return !weCannotPassThreeOpponentsBackward(fromBox, toBox, opponentColor);
         }
     }
-
 
     private boolean weCannotPassThreeOpponentsForward(int startBox, int endBox, String opponentColor) {
         if (endBox - startBox <= 3) return false; // Not enough space to be blocked by three
@@ -231,7 +268,17 @@ public class SenetGame extends Component {
     public void performComputerMove() {
         // Roll the dice for the computer
         int rollResult = rollDice();
+        System.out.println();
         System.out.println("Computer rolled: " + rollResult);
+
+        // Try to finish a piece first
+        if (performComputerFinishMove(rollResult)) {
+            // If a piece was finished, check if the game is over and switch turn
+            checkGameOver();
+            isPlayerTurn = true;
+            hasRolledDice = false;
+            return;
+        }
 
         // Initialize a flag to check if a move was made
         boolean moveMade = false;
@@ -263,25 +310,101 @@ public class SenetGame extends Component {
         hasRolledDice = false;
     }
 
-    public void checkGameOver() {
-        // Check if all pieces of one player are off the board
-        boolean playerWins = true;
-        boolean computerWins = true;
-        for (int row = 0; row < SenetBoard.NUM_ROWS; row++) {
-            for (int col = 0; col < SenetBoard.HOUSES_PER_ROW; col++) {
-                Piece piece = board.getPieceAt(row, col);
-                if (piece != null && piece.getOwnerColor().equals(Player.WHITE)) {
-                    playerWins = false;
-                } else if (piece != null && piece.getOwnerColor().equals(Player.BLACK)) {
-                    computerWins = false;
+    private boolean performComputerFinishMove(int rollResult) {
+        boolean pieceFinished = false;
+
+        // Iterate over the last row (row 2) and the last 5 columns
+        int lastRow = 2;
+        int[] finishableCols = {5, 6, 7, 8, 9}; // Columns where pieces can potentially finish
+
+        for (int col : finishableCols) {
+            Piece piece = board.getPieceAt(lastRow, col);
+            if (piece != null && piece.getOwnerColor().equals("Black")) {
+                if (canPieceFinish(piece, lastRow, col, rollResult)) {
+                    // Move the piece out of the board
+                    board.setPieceAt(lastRow, col, null);
+
+                    // Update finished pieces count
+                    incrementBlackFinishedPieces();
+                    System.out.println("Black pieces finished: " + getBlackPlayerFinishedPieces());
+
+                    // Update game UI
+                    gameUI.updateBoardDisplay();
+
+                    pieceFinished = true;
+                    break; // Exit the loop once a piece is finished
                 }
             }
         }
 
-        if (playerWins) {
+        return pieceFinished;
+    }
+
+    boolean canPieceFinish(Piece piece, int row, int col, int rollResult) {
+        // Implement the finishing conditions
+        if (piece == null) return false;
+
+        if (row == 2 && col == 9 && rollResult == 1) return true; // House 29
+        if (row == 2 && col == 8 && rollResult == 2) return true; // House 28
+        if (row == 2 && col == 7 && rollResult == 3) return true; // House 27
+        if (row == 2 && col == 5 && rollResult == 5) return true; // House 25
+
+        return false;
+    }
+
+    // Add methods to increment finished pieces count
+    public void incrementWhiteFinishedPieces() {
+        whitePlayerFinishedPieces++;
+    }
+
+    public void incrementBlackFinishedPieces() {
+        blackPlayerFinishedPieces++;
+    }
+
+    public int getWhitePlayerFinishedPieces() {
+        return whitePlayerFinishedPieces;
+    }
+
+    public int getBlackPlayerFinishedPieces() {
+        return blackPlayerFinishedPieces;
+    }
+
+    public void checkGameOver() {
+        // Check if all pieces of one player have finished
+        if (whitePlayerFinishedPieces == totalWhitePieces) {
             JOptionPane.showMessageDialog(null, "Player wins!");
-        } else if (computerWins) {
+            endGame();
+        } else if (blackPlayerFinishedPieces == totalBlackPieces) {
             JOptionPane.showMessageDialog(null, "Computer wins!");
+            endGame();
+        }
+    }
+
+    public void waterFall(Piece piece, int fromRow, int fromCol, int toRow, int toCol) {
+        int fromBox = fromRow * SenetBoard.HOUSES_PER_ROW + fromCol;
+        int toBox = toRow * SenetBoard.HOUSES_PER_ROW + toCol;
+
+        // Check if moving backward from squares 27, 28, or 29
+        if ((fromBox >= 27 && fromBox <= 29) && toBox < fromBox) {
+            // The piece falls into the water and returns to House 15
+            System.out.println("Piece at (" + fromRow + ", " + fromCol + ") falls into the water and returns to House 15.");
+
+            // Move the piece to House 15 (row 1, column 5)
+            board.setPieceAt(fromRow, fromCol, null); // Remove piece from current location
+            board.setPieceAt(1, 5, piece); // Place piece at House 15 (index 15)
+
+            // Update the game UI to reflect this move
+            gameUI.updateBoardDisplay();
+        }
+    }
+
+    private void endGame() {
+        // Implement end game logic, such as showing a message and offering a rematch
+        int response = JOptionPane.showConfirmDialog(null, "Would you like to play again?", "Game Over", JOptionPane.YES_NO_OPTION);
+        if (response == JOptionPane.YES_OPTION) {
+            gameUI.startNewGame(); // Reset the game using startNewGame method
+        } else {
+            System.exit(0); // Close the game
         }
     }
 
@@ -289,5 +412,9 @@ public class SenetGame extends Component {
         if (player != null) {
             player.setName(playerName);
         }
+    }
+
+    public String getPlayerName() {
+        return playerName;
     }
 }
